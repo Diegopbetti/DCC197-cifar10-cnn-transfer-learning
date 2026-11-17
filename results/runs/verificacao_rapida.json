@@ -1,0 +1,181 @@
+{
+  "config": {
+    "experiment_name": "verificacao_rapida",
+    "seed": 42,
+    "optimizer": "sgd",
+    "lr": 0.01,
+    "momentum": 0.9,
+    "weight_decay": 0.0,
+    "batch_size": 64,
+    "epochs": 1,
+    "scheduler": "none",
+    "augmentation": true,
+    "resize": null,
+    "normalization": "cifar10",
+    "num_workers": 0,
+    "device": "auto"
+  },
+  "history": {
+    "train_loss": [
+      2.3162145018577576
+    ],
+    "train_acc": [
+      0.099609375
+    ],
+    "val_loss": [
+      2.307587206363678
+    ],
+    "val_acc": [
+      0.10546875
+    ],
+    "lr": [
+      0.01
+    ],
+    "epoch_time_seconds": [
+      2.1581476000137627
+    ]
+  },
+  "best_val_acc": 0.10546875,
+  "best_epoch": 1,
+  "validation": {
+    "loss": 2.307587206363678,
+    "accuracy": 0.10546875,
+    "confusion_matrix": [
+      [
+        0,
+        0,
+        0,
+        28,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        33,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        23,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        27,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        26,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        20,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        21,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        25,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        30,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        21,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ]
+  },
+  "parameters": {
+    "total": 5418,
+    "trainable": 5418
+  },
+  "timings": {
+    "train_seconds": 2.1890805000439286,
+    "inference_seconds_per_image": 0.0024963003907032544
+  },
+  "hardware": {
+    "python_version": "3.13.0",
+    "torch_version": "2.15.0+cpu",
+    "cuda_version": null,
+    "device_type": "cpu",
+    "device_name": "Intel64 Family 6 Model 122 Stepping 8, GenuineIntel"
+  }
+}
