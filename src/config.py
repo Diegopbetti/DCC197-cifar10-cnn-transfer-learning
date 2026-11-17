@@ -43,3 +43,5 @@ class Config:
             raise ValueError("scheduler deve ser 'none', 'step' ou 'cosine'.")
         if self.normalization not in ("cifar10", "imagenet"):
             raise ValueError("normalization deve ser 'cifar10' ou 'imagenet'.")
+        if self.device not in ("auto", "cpu", "cuda"):
+            raise ValueError("device deve ser 'auto', 'cpu' ou 'cuda'.")
