@@ -1,0 +1,379 @@
+\documentclass[10pt,a4paper]{article}
+
+% Template de relatório — Trabalho de Visão Computacional
+% CIFAR-10: CNN própria e Transfer Learning
+% INSTRUÇÕES: consulte os comentários ao longo deste arquivo para saber o que
+% deve ser incluído em cada seção. Os comentários não aparecem no PDF compilado.
+% Remova os textos entre colchetes antes da entrega final.
+% As tabelas são exemplos e devem ser adaptadas aos experimentos realizados.
+% Limite recomendado: 10 páginas, incluindo referências.
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb}
+\usepackage{url}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0pt}
+\emergencystretch=2em
+
+% Substitua os campos de identificação.
+\title{\vspace{-1.2cm}\Large\bfseries [Título do artigo]}
+\author{
+    [Nome do integrante 1]\textsuperscript{1},
+    [Nome do integrante 2]\textsuperscript{1},
+    [Nome do integrante 3]\textsuperscript{1}\\[3pt]
+    \small \textsuperscript{1}[Departamento, instituição]\\
+    \small \texttt{[e-mails dos integrantes]}
+}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-0.8cm}
+
+% Escreva um resumo conciso do problema, objetivo, métodos,
+% protocolo experimental, principais resultados e conclusão.
+\begin{abstract}
+[Resumo: problema e objetivo; abordagens avaliadas; principais resultados quantitativos; conclusão principal.]
+\end{abstract}
+
+\noindent\textbf{Palavras-chave:} [3 a 5 palavras-chave.]
+
+% ============================================================
+\section{Introdução}
+% Instruções da especificação:
+% Apresente o problema de classificação de imagens, o dataset CIFAR-10 e a
+% motivação para utilização de redes neurais convolucionais e transfer learning.
+% Ao final da introdução, apresente claramente os objetivos do trabalho e,
+% preferencialmente, as principais questões que serão investigadas experimentalmente.
+
+Classificar imagens é uma tarefa fundamental em visão computacional, mas a
+variação de pose, iluminação, fundo e aparência entre objetos torna difícil
+definir regras manuais que funcionem para todas as imagens. Redes neurais
+convolucionais aprendem representações diretamente dos pixels e exploram a
+estrutura espacial por meio de filtros aplicados localmente e compartilhados
+ao longo da imagem \cite{lecun1998}. O CIFAR-10 é um conjunto de referência
+para esse problema, composto por imagens coloridas de baixa resolução
+distribuídas em dez classes \cite{krizhevsky2009}.
+
+Além de desenvolver uma CNN própria, o trabalho investiga modificações
+arquiteturais e o uso de modelos pré-treinados. No transfer learning, parte das
+representações aprendidas em uma tarefa de origem pode ser adaptada à tarefa
+alvo; a utilidade dessas representações depende, entre outros fatores, da
+camada transferida e da relação entre as tarefas \cite{yosinski2014}. Essa
+abordagem será comparada com o treinamento da CNN própria sob um protocolo
+comum.
+
+O objetivo é comparar o desempenho das arquiteturas e das estratégias de
+treinamento no CIFAR-10, considerando também o custo em parâmetros e tempo e
+as diferenças de desempenho entre classes. As configurações serão selecionadas
+com os dados de validação. O conjunto de teste permanecerá separado durante o
+desenvolvimento e será utilizado somente na avaliação final das configurações
+selecionadas.
+
+% ============================================================
+\section{Materiais e métodos}
+
+\subsection{Conjunto de dados e protocolo experimental}
+% Instruções da especificação:
+% Descreva o dataset CIFAR-10, a divisão dos dados utilizada, o pré-processamento,
+% as técnicas de data augmentation (quando utilizadas) e o protocolo experimental.
+% Informe a divisão de 45.000 imagens para treinamento, 5.000 para validação e
+% 10.000 para teste, explicando que a divisão treino/validação é estratificada,
+% fixa para o grupo e mantida em todos os experimentos.
+
+O CIFAR-10 contém 60.000 imagens coloridas de dimensão $32\times32$, divididas
+em dez classes. O conjunto oficial de treinamento contém 50.000 imagens e o
+conjunto de teste contém 10.000 imagens \cite{krizhevsky2009}. Para o
+desenvolvimento, os 50.000 exemplos de treinamento foram divididos uma única
+vez, de forma estratificada, em 45.000 exemplos para treinamento e 5.000 para
+validação, com semente fixa igual a 42. A validação contém 500 exemplos de cada
+classe. Os mesmos índices são reutilizados em todos os experimentos do grupo;
+os exemplos oficiais de teste não são usados na seleção de modelos ou
+hiperparâmetros.
+
+No pré-processamento padrão, as imagens são convertidas para tensores e
+normalizadas por canal usando média $(0.4914, 0.4822, 0.4465)$ e desvio-padrão
+$(0.2470, 0.2435, 0.2616)$. Quando habilitada, a ampliação de dados é aplicada
+somente ao treinamento e consiste em espelhamento horizontal aleatório e
+recorte aleatório de $32\times32$ após preenchimento de quatro pixels. A
+validação não recebe transformações aleatórias. A infraestrutura permite
+redimensionamento e normalização ImageNet para os experimentos que os
+requeiram; os valores efetivamente usados por cada modelo devem ser registrados
+junto aos respectivos hiperparâmetros.
+
+O pipeline fixa as sementes do experimento antes de carregar os dados e
+embaralha apenas os lotes de treinamento. A perda, o otimizador, a taxa de
+aprendizado, o tamanho do lote, o número de épocas e o scheduler são definidos
+na configuração de cada execução. A seleção de checkpoints e ajustes é feita
+pela validação. Os hiperparâmetros finais da CNN própria e de cada modelo
+pré-treinado são apresentados nas subseções correspondentes.
+
+\subsection{CNN própria e modelo baseline}
+% Instruções da especificação:
+% Descreva a arquitetura baseline desenvolvida, incluindo número de camadas,
+% filtros, kernels, funções de ativação, pooling, camadas totalmente conectadas,
+% Batch Normalization e Dropout (quando aplicáveis) e número total de parâmetros.
+% Descreva também a função de perda, o otimizador, os hiperparâmetros e as
+% decisões tomadas para o treinamento. Justifique as escolhas sempre que possível.
+
+[Descrição da arquitetura baseline e dos hiperparâmetros.]
+
+% TABELA DE EXEMPLO: adapte a estrutura à arquitetura efetivamente implementada;
+% adicione, remova ou altere linhas e colunas conforme necessário.
+\begin{table}[H]
+\centering
+\caption{Exemplo de organização da arquitetura baseline da CNN própria.}
+\label{tab:baseline}
+\small
+\begin{tabular}{llll}
+\toprule
+Camada & Configuração & Dimensão de saída & Parâmetros\\
+\midrule
+Camada 1 & [Configuração] & [Dimensão] & [Número]\\
+Camada 2 & [Configuração] & [Dimensão] & [Número]\\
+Adicionar linhas conforme necessário & & &\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Experimentos de modificação arquitetural}
+% Instruções da especificação:
+% Descreva as modificações realizadas na arquitetura e justifique as escolhas.
+% Informe como os experimentos foram organizados e quais fatores foram mantidos
+% constantes. Se algum hiperparâmetro foi ajustado em função de uma alteração
+% arquitetural, justifique e documente o ajuste. Discuta como cada alteração
+% permite investigar seu impacto no desempenho.
+
+[Descrição e justificativa dos experimentos arquiteturais.]
+
+% TABELA DE EXEMPLO: os experimentos listados são ilustrativos; substitua-os pelas
+% modificações realmente investigadas e ajuste a tabela ao seu protocolo.
+\begin{table}[H]
+\centering
+\caption{Exemplo de organização dos experimentos de modificação arquitetural.}
+\label{tab:experimentos}
+\small
+\begin{tabular}{clp{7cm}}
+\toprule
+ID & Configuração & Modificação em relação à baseline\\
+\midrule
+B0 & Baseline & Arquitetura de referência\\
+E1 & [Nome] & [Descrição da alteração]\\
+E2 & [Nome] & [Descrição da alteração]\\
+E3 & [Nome] & [Descrição da alteração]\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Modelos pré-treinados e transferência de aprendizado}
+% Instruções da especificação:
+% Descreva as arquiteturas utilizadas no transfer learning, a origem dos pesos
+% pré-treinados, a adaptação para as dez classes do CIFAR-10 e o pré-processamento.
+% Descreva as estratégias de treinamento avaliadas, incluindo quais camadas foram
+% congeladas e quais foram treinadas. Informe os hiperparâmetros e justifique as
+% decisões tomadas sempre que possível.
+
+[Descrição das arquiteturas pré-treinadas e das estratégias de treinamento.]
+
+\subsection{Métricas e ambiente experimental}
+% Instruções da especificação:
+% Descreva as métricas de avaliação, o protocolo utilizado para os experimentos,
+% o hardware e o software utilizados. A métrica principal deve ser accuracy;
+% descreva também a geração e análise das matrizes de confusão. Informe, quando
+% pertinente, parâmetros dos modelos, tempo de treinamento e tempo de inferência.
+
+A acurácia é a métrica principal. As matrizes de confusão são calculadas para as
+dez classes e permitem identificar erros recorrentes entre pares de classes.
+Durante o treinamento, são registrados a perda e a acurácia de treinamento e
+validação por época; essas séries são usadas para gerar as curvas apresentadas
+na Seção de Resultados. Também são registrados o número total e o número de
+parâmetros treináveis, o tempo total de treinamento e o tempo médio de
+inferência por imagem. A medição de inferência inclui aquecimento do modelo e
+sincronização quando executada em GPU.
+
+As execuções registram as versões de Python e PyTorch, a versão de CUDA quando
+disponível e o dispositivo utilizado. O hardware e as versões correspondentes
+aos experimentos finais devem ser consolidados a partir dos arquivos de
+resultado de cada execução: [informar os equipamentos e ambientes usados nos
+experimentos finais].
+
+% ============================================================
+\section{Resultados e discussão}
+
+\subsection{Resultados da CNN própria}
+% Instruções da especificação:
+% Apresente os resultados dos diferentes experimentos, incluindo, conforme pertinente,
+% tabelas comparativas, curvas de treinamento e validação, matrizes de confusão,
+% resultados por classe e análise de parâmetros/custo computacional.
+% Não apresente apenas tabelas e gráficos: analise e discuta os resultados no texto.
+% Procure responder:
+% - Quais alterações na CNN própria produziram maior impacto?
+% - Aumentar a capacidade da rede melhorou o desempenho?
+% - As técnicas de regularização foram efetivas?
+% - Como as alterações afetaram overfitting/underfitting e a generalização?
+% Os resultados de teste não devem ser usados para escolher modelos ou hiperparâmetros.
+
+[Apresente e discuta os resultados dos experimentos da CNN própria.]
+
+% TABELA DE EXEMPLO: inclua apenas métricas e observações pertinentes aos
+% experimentos realizados; os campos e as colunas podem ser alterados.
+\begin{table}[H]
+\centering
+\caption{Exemplo de apresentação dos resultados de validação da CNN própria.}
+\label{tab:resultados_cnn}
+\small
+\begin{tabular}{lrrrl}
+\toprule
+Modelo & Accuracy (\%) & Parâmetros & Tempo de treino & Observações\\
+\midrule
+Baseline & [ ] & [ ] & [ ] & [ ]\\
+E1 & [ ] & [ ] & [ ] & [ ]\\
+E2 & [ ] & [ ] & [ ] & [ ]\\
+E3 & [ ] & [ ] & [ ] & [ ]\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% Exemplo de inserção de figura; substitua o caminho pelo arquivo real.
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.85\linewidth]{figuras/curvas_cnn.pdf}
+%     \caption{Curvas de treinamento e validação da CNN.}
+%     \label{fig:curvas_cnn}
+% \end{figure}
+
+\subsection{Resultados de transferência de aprendizado}
+% Instruções da especificação:
+% Apresente e discuta os resultados das arquiteturas pré-treinadas e das estratégias
+% avaliadas. Identifique as configurações selecionadas com base na validação.
+% Discuta:
+% - se os modelos pré-treinados apresentaram vantagem em relação à CNN própria;
+% - se o congelamento ou descongelamento das camadas afetou o desempenho;
+% - diferenças entre treinamento do zero e transfer learning, quando essa comparação
+%   tiver sido realizada;
+% - desempenho por classe, custo computacional e limitações observadas.
+
+[Apresente e discuta os resultados dos modelos pré-treinados.]
+
+% TABELA DE EXEMPLO: adapte as linhas às arquiteturas e estratégias efetivamente
+% avaliadas; não é necessário manter todas as colunas sugeridas.
+\begin{table}[H]
+\centering
+\caption{Exemplo de apresentação dos resultados de validação em transferência de aprendizado.}
+\label{tab:transfer}
+\small
+\begin{tabular}{llrrr}
+\toprule
+Arquitetura & Estratégia & Accuracy val. (\%) & Parâmetros treináveis & Tempo\\
+\midrule
+Modelo 1 & [Estratégia 1] & [ ] & [ ] & [ ]\\
+Modelo 1 & [Estratégia 2] & [ ] & [ ] & [ ]\\
+Modelo 2 & [Estratégia 1] & [ ] & [ ] & [ ]\\
+Modelo 2 & [Estratégia 2] & [ ] & [ ] & [ ]\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Avaliação final no conjunto de teste}
+% Instruções da especificação:
+% Apresente a comparação global entre a melhor CNN própria e a melhor configuração
+% de cada uma das duas arquiteturas pré-treinadas. Os resultados de teste devem
+% corresponder às configurações selecionadas a partir da validação.
+% Discuta:
+% - quais classes foram mais difíceis de classificar e quais foram confundidas;
+% - as diferenças entre as arquiteturas e estratégias;
+% - a relação entre desempenho, número de parâmetros e custo computacional;
+% - vantagens e limitações do transfer learning;
+% - se há relação clara entre complexidade computacional e desempenho.
+% Explique os resultados; não se limite a apresentar métricas e tabelas.
+
+[Apresente a comparação final e discuta os resultados.]
+
+% TABELA DE EXEMPLO: compare as configurações finais selecionadas com base na
+% validação. Adapte as métricas e as linhas às abordagens realmente avaliadas.
+\begin{table}[H]
+\centering
+\caption{Exemplo de comparação das configurações finais selecionadas no conjunto de teste.}
+\label{tab:teste}
+\small
+\begin{tabular}{lrrr}
+\toprule
+Abordagem selecionada & Accuracy teste (\%) & Parâmetros & Tempo de inferência\\
+\midrule
+CNN própria & [ ] & [ ] & [ ]\\
+Arquitetura 1 e estratégia & [ ] & [ ] & [ ]\\
+Arquitetura 2 e estratégia & [ ] & [ ] & [ ]\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Síntese e limitações}
+% Instruções da especificação:
+% Retome brevemente o que foi realizado no trabalho e apresente as principais
+% conclusões obtidas a partir dos experimentos. Sintetize as diferenças observadas
+% entre as arquiteturas e as conclusões sobre transfer learning. Descreva as
+% dificuldades encontradas, limitações do trabalho e possíveis extensões futuras.
+
+[Apresente a síntese dos achados e as limitações.]
+
+% ============================================================
+\section{Conclusão}
+% Instruções da especificação:
+% A conclusão deve conter:
+% - uma retomada breve do que foi realizado no trabalho;
+% - as principais conclusões obtidas a partir dos experimentos;
+% - as principais diferenças observadas entre as arquiteturas;
+% - conclusões sobre o uso de transfer learning;
+% - dificuldades encontradas;
+% - limitações do trabalho;
+% - possíveis extensões ou experimentos futuros.
+% Não introduza resultados novos nesta seção.
+
+[Escreva a conclusão conforme as instruções acima.]
+
+% ============================================================
+\section*{Contribuição individual}
+% Instrução da especificação:
+% Liste as contribuições de cada integrante para o trabalho, explicitando
+% o que cada um realizou.
+
+\begin{itemize}[leftmargin=1.2cm,noitemsep,topsep=2pt]
+    \item \textbf{[Nome do integrante 1]:} [Contribuições.]
+    \item \textbf{[Nome do integrante 2]:} [Contribuições.]
+    \item \textbf{[Nome do integrante 3]:} [Contribuições.]
+    \item \textbf{[Nome do integrante 4, se aplicável]:} [Contribuições.]
+\end{itemize}
+
+% ============================================================
+% REFERÊNCIAS
+% Instruções:
+% - Mantenha as referências em um arquivo externo chamado referencias.bib.
+% - Cite as referências no texto com \cite{chave}.
+% - Inclua no arquivo .bib apenas referências utilizadas no texto.
+% - Compile com a sequência: pdfLaTeX -> BibTeX -> pdfLaTeX -> pdfLaTeX.
+\bibliographystyle{plain}
+\bibliography{referencias}
+
+\end{document}
