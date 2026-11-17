@@ -1,10 +1,9 @@
 # CIFAR-10: CNN própria e transfer learning
 
 Infraestrutura compartilhada para os experimentos de classificação do CIFAR-10
-do Trabalho Prático de Visão Computacional da UFJF. Este repositório oferece
-configuração, preparação dos dados e uma divisão fixa de treino e validação.
-As arquiteturas e os loops de treinamento serão fornecidos nas próximas etapas
-do trabalho.
+do Trabalho Prático de Visão Computacional da UFJF. O repositório oferece
+configuração, preparação dos dados, treinamento e métricas de validação. Cada
+integrante define seu modelo e usa a mesma divisão fixa de treino e validação.
 
 ## Requisitos
 
@@ -84,3 +83,42 @@ Use `set_seed(config.seed)` antes de iniciar cada experimento. A semente padrão
 é 42 e o split estratificado também usa 42. Não regenere nem altere o split
 entre experimentos. O conjunto de teste deve permanecer separado até a seleção
 das configurações finais pela validação.
+
+## Treinar e validar um modelo
+
+Defina o modelo como uma subclasse de `torch.nn.Module` que retorne 10 logits por imagem. Configure os hiperparâmetros e execute `run_experiment`:
+
+```python
+from torch import nn
+from src.config import Config
+from src.experiment import run_experiment
+
+class MeuModelo(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.AdaptiveAvgPool2d((1, 1)),
+        )
+        self.classifier = nn.Linear(32, 10)
+
+    def forward(self, imagens):
+        return self.classifier(self.features(imagens).flatten(start_dim=1))
+
+config = Config(
+    experiment_name='minha_cnn', seed=42, optimizer='sgd', lr=0.01,
+    momentum=0.9, weight_decay=0.0001, batch_size=128, epochs=20,
+    scheduler='cosine', device='auto',
+)
+resultado = run_experiment(MeuModelo(), config)
+print(resultado['validation']['accuracy'])
+```
+
+O JSON fica em `results/runs/<experiment_name>.json` e o checkpoint da melhor acurácia de validação fica em `checkpoints/<experiment_name>_best.pt`. O scheduler `none` mantém a taxa de aprendizado fixa; `step` usa `StepLR` com `step_size=max(1, epochs // 3)` e `gamma=0.1`; `cosine` usa `CosineAnnealingLR` com `T_max=epochs`. Este fluxo usa apenas treino e validação e nunca carrega o conjunto de teste.
+
+Para conferir o pipeline com subconjuntos pequenos do CIFAR-10:
+
+```powershell
+python scripts/smoke_test.py --fast
+```

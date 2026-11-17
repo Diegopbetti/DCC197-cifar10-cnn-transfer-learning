@@ -15,7 +15,7 @@ from src.config import Config
 from src.evaluate import evaluate
 
 
-CHECKPOINT_DIR = Path("checkpoints")
+CHECKPOINT_DIR = Path(__file__).resolve().parents[1] / "checkpoints"
 
 
 def resolve_device(device_name: str) -> torch.device:
