@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader
 from src.config import Config
 from src.data import get_dataloaders
 from src.evaluate import confusion_matrix_from, evaluate
+from src.plots import save_training_curves
 from src.train import resolve_device, train_model
 from src.utils import (
     count_parameters,
@@ -24,6 +25,7 @@ from src.utils import (
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = PROJECT_ROOT / "results" / "runs"
+PLOTS_DIR = PROJECT_ROOT / "results" / "plots"
 
 
 def run_experiment(
@@ -85,6 +87,11 @@ def run_experiment(
         },
         "hardware": hardware,
     }
+    save_training_curves(
+        training["history"],
+        config.experiment_name,
+        output_dir=PLOTS_DIR,
+    )
     result_path = RESULTS_DIR / f"{config.experiment_name}.json"
     save_run(result, result_path)
     return result
