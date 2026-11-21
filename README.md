@@ -31,6 +31,15 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+No Windows, `pip install -r requirements.txt` instala o PyTorch somente para
+CPU. Para usar uma GPU NVIDIA, instale primeiro o PyTorch com o comando indicado
+em [pytorch.org/get-started/locally](https://pytorch.org/get-started/locally/)
+e depois instale os demais pacotes do projeto. No Google Colab e no Kaggle, o
+PyTorch já vem instalado.
+
+Execute sempre os comandos a partir da raiz do repositório. Os imports
+`from src...` e os caminhos relativos dependem desse diretório.
+
 ## Divisão fixa dos dados
 
 Gere uma única vez a divisão estratificada dos 50.000 exemplos de treino:
@@ -92,6 +101,7 @@ Defina o modelo como uma subclasse de `torch.nn.Module` que retorne 10 logits po
 from torch import nn
 from src.config import Config
 from src.experiment import run_experiment
+from src.utils import set_seed
 
 class MeuModelo(nn.Module):
     def __init__(self):
@@ -111,9 +121,14 @@ config = Config(
     momentum=0.9, weight_decay=0.0001, batch_size=128, epochs=20,
     scheduler='cosine', device='auto',
 )
-resultado = run_experiment(MeuModelo(), config)
+set_seed(config.seed)
+modelo = MeuModelo()
+resultado = run_experiment(modelo, config)
 print(resultado['validation']['accuracy'])
 ```
+
+Chame `set_seed(config.seed)` antes de instanciar o modelo para que os pesos
+iniciais também dependam da semente.
 
 O JSON fica em `results/runs/<experiment_name>.json` e o checkpoint da melhor acurácia de validação fica em `checkpoints/<experiment_name>_best.pt`. O scheduler `none` mantém a taxa de aprendizado fixa; `step` usa `StepLR` com `step_size=max(1, epochs // 3)` e `gamma=0.1`; `cosine` usa `CosineAnnealingLR` com `T_max=epochs`. Este fluxo usa apenas treino e validação e nunca carrega o conjunto de teste.
 
@@ -121,4 +136,29 @@ Para conferir o pipeline com subconjuntos pequenos do CIFAR-10:
 
 ```powershell
 python scripts/smoke_test.py --fast
+```
+
+## Nomes de experimentos
+
+O valor de `experiment_name` define o nome do JSON em
+`results/runs/<nome>.json` e do checkpoint em `checkpoints/<nome>_best.pt`.
+Repetir um nome sobrescreve os resultados anteriores. Para evitar isso, cada
+integrante deve usar um prefixo com seu número, por exemplo `p2_baseline`,
+`p3_batchnorm`, `p4_resnet18_frozen` e `p5_mobilenetv2_finetune`.
+
+## Observação para Windows
+
+Se `num_workers` for maior que zero, o `DataLoader` usa multiprocessamento. Em
+scripts de treinamento no Windows, coloque o código principal dentro do bloco
+`if __name__ == "__main__":` para evitar travamentos ou erros:
+
+```python
+def main():
+    config = Config(experiment_name="p2_baseline")
+    set_seed(config.seed)
+    modelo = MeuModelo()
+    run_experiment(modelo, config)
+
+if __name__ == "__main__":
+    main()
 ```

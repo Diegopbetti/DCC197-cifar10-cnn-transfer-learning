@@ -39,35 +39,31 @@ def _synchronize_if_cuda(device: torch.device) -> None:
         torch.cuda.synchronize(device)
 
 
-def measure_inference_time(
-    model: nn.Module,
-    loader: DataLoader,
-    device: torch.device | str,
-) -> float:
-    """Retorna segundos por imagem após aquecimento e uma passagem cronometrada."""
-    resolved_device = torch.device(device)
-    first_batch = next(iter(loader), None)
-    if first_batch is None:
-        raise ValueError("Não é possível medir inferência com um loader vazio.")
-
+def measure_inference_time(model, loader, device, num_batches=5, repeats=3) -> float:
+    """Segundos por imagem, medindo apenas o forward (sem carregar dados)."""
+    device = torch.device(device)
+    batches = []
+    for i, (images, _) in enumerate(loader):
+        if i >= num_batches:
+            break
+        batches.append(images.to(device))
+    if not batches:
+        raise ValueError("Loader vazio.")
     was_training = model.training
     model.eval()
     try:
         with torch.no_grad():
-            warmup_images = first_batch[0].to(resolved_device)
-            model(warmup_images)
-            _synchronize_if_cuda(resolved_device)
-
-            image_count = 0
-            start_time = time.perf_counter()
-            for batch in loader:
-                images = batch[0].to(resolved_device)
-                model(images)
-                image_count += images.shape[0]
-            _synchronize_if_cuda(resolved_device)
-            elapsed = time.perf_counter() - start_time
+            model(batches[0])                       # aquecimento
+            _synchronize_if_cuda(device)
+            start = time.perf_counter()
+            for _ in range(repeats):
+                for images in batches:
+                    model(images)
+            _synchronize_if_cuda(device)
+            elapsed = time.perf_counter() - start
     finally:
         model.train(was_training)
+    return elapsed / (repeats * sum(b.shape[0] for b in batches))
 
     if image_count == 0:
         raise ValueError("O loader não forneceu imagens para medir inferência.")
