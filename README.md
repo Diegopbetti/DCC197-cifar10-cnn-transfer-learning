@@ -138,6 +138,47 @@ Para conferir o pipeline com subconjuntos pequenos do CIFAR-10:
 python scripts/smoke_test.py --fast
 ```
 
+## CNN própria
+
+A CNN da Pessoa 2 está definida em `src/models/cnn.py`. A configuração de treino
+em `scripts/own_cnn_config.py` usa seed 42, Adam com learning rate `0.001`,
+weight decay `0.0001`, batch 128, 30 épocas, scheduler cosine, augmentation e
+normalização CIFAR-10. O loop compartilhado usa `CrossEntropyLoss`.
+
+Com o ambiente virtual ativado e a partir da raiz do repositório, rode:
+
+```powershell
+python scripts/run_own_cnn_experiments.py
+```
+
+O script executa quatro treinos completos, todos com os mesmos hiperparâmetros:
+
+| Nome | Arquitetura |
+|---|---|
+| `cnn_baseline` | 3 estágios, 32/64/128 filtros, dropout 0.5 |
+| `cnn_deep` | 4 estágios, 32/64/128/256 filtros, dropout 0.5 |
+| `cnn_wide` | 3 estágios, 64/128/256 filtros, dropout 0.5 |
+| `cnn_dropout` | Baseline com dropout 0.2 |
+
+Todos usam BatchNorm. O parâmetro `use_batch_norm=False` pode ser passado ao
+construtor `BaselineCNN` para desativá-lo. Os resultados de cada treino são
+salvos em `results/runs/`, os gráficos em `results/plots/` e o melhor checkpoint
+em `checkpoints/`. Como cada treino usa 30 épocas e o conjunto completo, a
+execução pode levar vários minutos por modelo, especialmente em CPU.
+
+Para testar somente o formato dos logits (entrada CIFAR-10 produzindo 10
+saídas), sem treinar:
+
+```powershell
+python -m unittest tests.test_cnn
+```
+
+Para executar todos os testes do repositório:
+
+```powershell
+python -m unittest discover -s tests
+```
+
 ## Nomes de experimentos
 
 O valor de `experiment_name` define o nome do JSON em
